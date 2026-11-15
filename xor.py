@@ -22,7 +22,7 @@ xor_truth_table = [
 ]
 
 inputs = [[Value(x), Value(y)] for (x, y), _ in xor_truth_table]
-results = [Value(z) for _, z in xor_truth_table]
+targets = [Value(z) for _, z in xor_truth_table]
 
 random.seed(1337)
 model = timer(lambda: MLP(2, [4, 1]), "Building model...")
@@ -30,9 +30,12 @@ print()
 
 
 def forward():
-    outputs = [model(inp) for inp in inputs]
-    errors = [(res - out)**2 for res, out in zip(results, outputs)]
-    accuracies = [round(out.data) == int(res.data) for res, out in zip(results, outputs)]
+    return [model(inp) for inp in inputs]
+
+
+def criterion(outputs):
+    errors = [(out - tgt)**2 for out, tgt in zip(outputs, targets)]
+    accuracies = [round(out.data) == int(tgt.data) for out, tgt in zip(outputs, targets)]
     loss = sum(errors) / len(errors)
     accuracy = sum(accuracies) / len(accuracies)
     return loss, accuracy
@@ -46,7 +49,8 @@ def train(epochs, verbose=False):
             p.data -= learning_rate * p.grad
     for k in range(1, epochs + 1):
         # Forward pass
-        loss, accuracy = forward()
+        outputs = forward()
+        loss, accuracy = criterion(outputs)
         # Backward pass (backpropagation)
         model.zero_grad()
         loss.backward()
@@ -62,4 +66,4 @@ print()
 print("Testing model...")
 for (x, y), z in xor_truth_table:
     r = round(model([x, y]).data)
-    print(f"{x} XOR {y} = {r} {'\u2713' if r == z else '\u2717'}")
+    print(f"{x} XOR {y} = {r} {'✓' if r == z else '✗'}")
